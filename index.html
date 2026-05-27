@@ -49,7 +49,7 @@
     .hidden { display:none !important; }
     
 
-@media (min-width:1251px) {
+@media (min-width:1501px) {
   main{
     grid-template-columns:minmax(680px,1fr) 610px;
   }
@@ -104,7 +104,7 @@
 
 
 /* === Responsive Layout stabil === */
-@media (min-width:1251px) {
+@media (min-width:1501px) {
   main {
     grid-template-columns:minmax(680px,1fr) 610px;
   }
@@ -118,7 +118,7 @@
   }
 }
 
-@media (max-width:1250px) {
+@media (max-width:1500px) {
   main {
     grid-template-columns:1fr !important;
   }
@@ -143,7 +143,7 @@
 
 
 /* === FINAL: Responsive Ansicht Desktop / Tablet / Handy === */
-@media (min-width:1251px) {
+@media (min-width:1501px) {
   main {
     grid-template-columns:minmax(680px,1fr) 610px !important;
   }
@@ -157,7 +157,7 @@
   }
 }
 
-@media (max-width:1250px) {
+@media (max-width:1500px) {
   main {
     grid-template-columns:1fr !important;
   }
@@ -177,6 +177,38 @@
   }
   .kartenbereich {
     grid-template-columns:1fr !important;
+  }
+}
+
+
+/* === FINAL OVERRIDE: Tablet wirklich untereinander === */
+@media (max-width:1500px) {
+  main {
+    display:grid !important;
+    grid-template-columns:1fr !important;
+  }
+  #kartenbereich,
+  .kartenbereich {
+    order:1 !important;
+    width:100% !important;
+  }
+  .bericht-card {
+    position:static !important;
+    order:2 !important;
+    width:100% !important;
+    max-width:none !important;
+  }
+}
+
+@media (min-width:1501px) {
+  main {
+    display:grid !important;
+    grid-template-columns:minmax(680px,1fr) 610px !important;
+  }
+  .bericht-card {
+    position:sticky !important;
+    top:20px !important;
+    order:initial !important;
   }
 }
 
