@@ -47,7 +47,13 @@
 
     .internal { display:none !important; color:var(--muted); font-size:12px; margin-top:8px; }
     .hidden { display:none !important; }
-    @media (max-width:1250px) { main { grid-template-columns:1fr; } .bericht-card { position:static; } }
+    
+
+@media (min-width:1251px) {
+  main{
+    grid-template-columns:minmax(680px,1fr) 610px;
+  }
+}
     @media (max-width:850px) { main { padding:12px; } .kartenbereich { grid-template-columns:1fr; } }
   
 /* === UX-Update: Kartenstatus und klickbarer Header === */
@@ -67,8 +73,11 @@
   border-color: #dcecdc !important;
 }
 .card[open] {
-  background: #ffffff !important;
-  border-color: #e6ddd2 !important;
+  background: #f2faf2 !important;
+  border-color: #dcecdc !important;
+}
+.card[open] summary {
+  background: #f2faf2 !important;
 }
 .card.card-disabled {
   opacity: .58;
@@ -91,6 +100,45 @@
 }
 #bericht[contenteditable="true"]:focus {
   box-shadow: inset 0 0 0 2px rgba(143,179,166,.35);
+}
+
+
+/* === Responsive Layout stabil === */
+@media (min-width:1251px) {
+  main {
+    grid-template-columns:minmax(680px,1fr) 610px;
+  }
+  .bericht-card {
+    position:sticky;
+    top:20px;
+    order:initial;
+  }
+  .kartenbereich {
+    order:initial;
+  }
+}
+
+@media (max-width:1250px) {
+  main {
+    grid-template-columns:1fr !important;
+  }
+  .kartenbereich {
+    order:1;
+  }
+  .bericht-card {
+    position:static !important;
+    order:2;
+    width:100%;
+  }
+}
+
+@media (max-width:850px) {
+  main {
+    padding:12px;
+  }
+  .kartenbereich {
+    grid-template-columns:1fr;
+  }
 }
 
 </style>
@@ -3395,6 +3443,50 @@ function baueAdressblock(verbraucht) {
 // Bericht bauen
 // =========================================================
 
+function tageText(tage) {
+  const t = clean(tage || '');
+  if (!t) return '';
+  return t === '1' ? '1 Tag' : `${t} Tagen`;
+}
+
+function istZukunftsOderHeuteAngabe(text) {
+  const t = clean(text).toLowerCase();
+  return /\b(heute|morgen|übermorgen|uebermorgen)\b/.test(t);
+}
+
+function baueEinleitung(verbraucht) {
+  const status = selectedByGroup('einleitung_status');
+  const datum = inputValue('einleitung_datum');
+  const tage = inputValue('einleitung_tage');
+
+  if (!status && !datum && !tage) return '';
+  if (status) verbraucht.add(status.id);
+
+  const tageFormuliert = tageText(tage);
+
+  if (status?.id === 'einleitung_wird') {
+    // Zukunft: konkreter Zeitpunkt gewinnt vor Tagefeld. So entstehen keine Sätze wie "morgen ... in 2 Tagen".
+    if (datum) return `Die Mutter wird ${datum} zur Einleitung in die Klinik gehen.`;
+    if (tageFormuliert) return `Die Mutter wird voraussichtlich in ${tageFormuliert} zur Einleitung in die Klinik gehen.`;
+    return status.bericht || 'Die Mutter wird zur Einleitung in die Klinik gehen.';
+  }
+
+  if (status?.id === 'einleitung_ist') {
+    // Vergangenheit/Gegenwart: Tage gewinnen vor Datum, damit keine Sätze wie "seit morgen, seit 2 Tagen" entstehen.
+    if (tageFormuliert) return `Die Mutter befindet sich seit ${tageFormuliert} zur Einleitung in der Klinik.`;
+    if (datum && !istZukunftsOderHeuteAngabe(datum)) return `Die Mutter befindet sich seit ${datum} zur Einleitung in der Klinik.`;
+    return status.bericht || 'Die Mutter befindet sich zur Einleitung in der Klinik.';
+  }
+
+  if (status?.id === 'dauer_unbekannt') {
+    return status.bericht || 'Wie lange es bis zur Geburt dauern wird, ist aktuell nicht bekannt.';
+  }
+
+  if (datum) return `Einleitungszeitpunkt: ${datum}.`;
+  if (tageFormuliert) return `Einleitung seit ${tageFormuliert}.`;
+  return '';
+}
+
 function baueBericht() {
   updateKinderHandOptions();
   updateMehrlingsSituationOptions();
@@ -3414,10 +3506,11 @@ function baueBericht() {
   // 2 Lebendbilder
   pushIf(abschnitte, baueLebendbilder(verbraucht));
 
-  // 3 Einleitung
-  selectedEntries().filter(k => k.blatt === '4_Einleitung' && k.ausgabeart === 'direkt').forEach(k => {
+  // 3 Einleitung – bewusst nicht mehr stumpf aus allen Feldern zusammensetzen.
+  pushIf(abschnitte, baueEinleitung(verbraucht));
+  selectedAllByGroup('einleitung_erwartung').forEach(k => {
     verbraucht.add(k.id);
-    pushIf(abschnitte, k.bericht);
+    if (k.ausgabeart === 'direkt') pushIf(abschnitte, k.bericht);
   });
   pushIf(abschnitte, ergaenzungValue('ergaenzung_einleitung'));
 
@@ -3484,9 +3577,6 @@ function baueBericht() {
   pushIf(abschnitte, baueListe('infekte_status','infekte_liste','Infekte', verbraucht));
   pushIf(abschnitte, ergaenzungValue('ergaenzung_infekte'));
 
-  // Adressdaten ans Ende des Mittelblocks, Abschluss bleibt dennoch Abschluss.
-  pushIf(abschnitte, baueAdressblock(verbraucht));
-
   const frage = selectedByGroup('abschlussfrage');
   if (frage) verbraucht.add(frage.id);
 
@@ -3507,6 +3597,9 @@ function baueBericht() {
     const grussName = inputValue('gruss_Name');
     abschnitte.push(grussName ? `${gruss.bericht} ${capitalise(grussName)}` : gruss.bericht);
   }
+
+  // Adressdaten gehören wirklich ganz ans Ende – nach Abschlussfrage und Grußformel.
+  pushIf(abschnitte, baueAdressblock(verbraucht));
 
   const text = [...oben, ...abschnitte].filter(Boolean).join('\n\n');
   document.getElementById('debugInfo').innerText = `${selectedIds().length} Auswahl(en), ${verbraucht.size} verarbeitet`;
@@ -3643,8 +3736,6 @@ aktualisieren();
 
 
 
-document.addEventListener('input', aktualisieren);
-document.addEventListener('change', aktualisieren);
 </script>
 
 <script>
@@ -3808,6 +3899,111 @@ document.addEventListener('click', function(event) {
     }
   });
 });
+</script>
+
+
+
+
+<script>
+/* === Mini-Fix: Kartenstatus beim Schließen ohne Default-Einling === */
+(function(){
+  function isReallyVisible(el) {
+    if (!el) return false;
+    if (el.type === 'hidden') return false;
+    if (el.closest('.hidden')) return false;
+    if (el.closest('[hidden]')) return false;
+    const label = el.closest('label');
+    if (label && label.classList.contains('hidden')) return false;
+    return true;
+  }
+
+  function selectHasValue(select) {
+    const value = String(select.value || '').trim();
+    const text = String(select.options[select.selectedIndex]?.textContent || '').trim().toLowerCase();
+
+    if (!value) return false;
+    if (value.startsWith('keine_')) return false;
+    if (text.includes('bitte auswählen')) return false;
+    if (text.startsWith('keine ') || text.startsWith('kein ')) return false;
+
+    return true;
+  }
+
+  function fieldHasValue(field) {
+    if (!field || field.disabled || !isReallyVisible(field)) return false;
+
+    if (field.type === 'radio') {
+      if (!field.checked) return false;
+
+      // Wichtig: Standardwert in "Aktuelle Situation" darf die Karte nicht grün machen.
+      if (field.id === 'einling') return false;
+
+      return true;
+    }
+
+    if (field.type === 'checkbox') {
+      return !!field.checked;
+    }
+
+    if (field.tagName === 'SELECT') {
+      return selectHasValue(field);
+    }
+
+    return String(field.value || '').trim() !== '';
+  }
+
+  function cardHasRealValue(card) {
+    return Array.from(card.querySelectorAll('input, select, textarea')).some(fieldHasValue);
+  }
+
+  function refreshCard(card) {
+    if (!card || !card.classList || !card.classList.contains('card')) return;
+
+    card.classList.remove('card-empty', 'card-complete');
+
+    if (cardHasRealValue(card)) {
+      card.classList.add('card-complete');
+    } else {
+      card.classList.add('card-empty');
+    }
+  }
+
+  function refreshFromEvent(ev) {
+    const card = ev.target.closest && ev.target.closest('.card');
+    if (!card) return;
+    refreshCard(card);
+    requestAnimationFrame(function(){ refreshCard(card); });
+  }
+
+  document.addEventListener('input', refreshFromEvent, true);
+  document.addEventListener('change', refreshFromEvent, true);
+
+  document.addEventListener('toggle', function(ev){
+    const card = ev.target;
+    if (!card || !card.classList || !card.classList.contains('card')) return;
+    refreshCard(card);
+    requestAnimationFrame(function(){ refreshCard(card); });
+    setTimeout(function(){ refreshCard(card); }, 80);
+  }, true);
+
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function(){
+      setTimeout(function(){
+        document.querySelectorAll('.card').forEach(function(card){
+          card.removeAttribute('open');
+          refreshCard(card);
+        });
+      }, 140);
+    });
+  }
+
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      document.querySelectorAll('.card').forEach(refreshCard);
+    }, 250);
+  });
+})();
 </script>
 
 </body>
