@@ -141,6 +141,45 @@
   }
 }
 
+
+/* === FINAL: Responsive Ansicht Desktop / Tablet / Handy === */
+@media (min-width:1251px) {
+  main {
+    grid-template-columns:minmax(680px,1fr) 610px !important;
+  }
+  .bericht-card {
+    position:sticky !important;
+    top:20px;
+    order:initial;
+  }
+  .kartenbereich {
+    order:initial;
+  }
+}
+
+@media (max-width:1250px) {
+  main {
+    grid-template-columns:1fr !important;
+  }
+  .kartenbereich {
+    order:1 !important;
+  }
+  .bericht-card {
+    position:static !important;
+    order:2 !important;
+    width:100%;
+  }
+}
+
+@media (max-width:850px) {
+  main {
+    padding:12px !important;
+  }
+  .kartenbereich {
+    grid-template-columns:1fr !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -4003,6 +4042,109 @@ document.addEventListener('click', function(event) {
       document.querySelectorAll('.card').forEach(refreshCard);
     }, 250);
   });
+})();
+</script>
+
+
+<script>
+/* === FINAL: Reset-Fix für Lebendbilder/Einleitung nach Eingaben löschen === */
+(function(){
+  function findCard(blatt) {
+    return document.querySelector('.card[data-blatt="' + blatt + '"]');
+  }
+
+  function unlockCard(card) {
+    if (!card) return;
+
+    card.classList.remove('card-disabled');
+    card.removeAttribute('disabled');
+
+    const lockHint = card.querySelector('.card-lock-hint');
+    if (lockHint) lockHint.remove();
+
+    const toggleHint = card.querySelector('.toggle-hint');
+    if (toggleHint) {
+      toggleHint.innerText = card.hasAttribute('open') ? 'schließen' : 'öffnen';
+    }
+  }
+
+  function cardHasRealValue(card) {
+    if (!card) return false;
+
+    const fields = card.querySelectorAll('input, textarea, select');
+
+    for (const field of fields) {
+      if (field.disabled || field.type === 'hidden') continue;
+      if (field.closest('.hidden') || field.closest('[hidden]')) continue;
+
+      if (field.type === 'checkbox') {
+        if (field.checked) return true;
+        continue;
+      }
+
+      if (field.type === 'radio') {
+        if (field.checked && field.id !== 'einling') return true;
+        continue;
+      }
+
+      if (field.tagName === 'SELECT') {
+        const value = String(field.value || '').trim();
+        const text = String(field.options[field.selectedIndex]?.textContent || '').trim().toLowerCase();
+
+        if (
+          value &&
+          !value.startsWith('keine_') &&
+          !text.startsWith('keine ') &&
+          !text.startsWith('kein ') &&
+          !text.includes('bitte auswählen')
+        ) {
+          return true;
+        }
+        continue;
+      }
+
+      if (String(field.value || '').trim() !== '') return true;
+    }
+
+    return false;
+  }
+
+  function refreshCardColor(card) {
+    if (!card) return;
+
+    card.classList.remove('card-empty', 'card-complete');
+
+    if (card.hasAttribute('open')) return;
+
+    if (cardHasRealValue(card)) {
+      card.classList.add('card-complete');
+    } else {
+      card.classList.add('card-empty');
+    }
+  }
+
+  function resetAfterClear() {
+    const lebend = findCard('3_Lebendbilder');
+    const einleitung = findCard('4_Einleitung');
+
+    unlockCard(lebend);
+    unlockCard(einleitung);
+
+    document.querySelectorAll('.card').forEach(function(card){
+      card.removeAttribute('open');
+      refreshCardColor(card);
+      const hint = card.querySelector('.toggle-hint');
+      if (hint && !card.classList.contains('card-disabled')) hint.innerText = 'öffnen';
+    });
+  }
+
+  const clearBtn = document.getElementById('clearBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function(){
+      setTimeout(resetAfterClear, 180);
+      setTimeout(resetAfterClear, 450);
+    });
+  }
 })();
 </script>
 
