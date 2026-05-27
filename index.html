@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Einsatzformular – Allgemein – JSON Arbeitsversion</title>
+  <title>Einsatzformular – JSON Arbeitsversion</title>
   <style>
     :root {
       --bg:#f6f1ea; --card:#fff; --soft:#f1ebe3; --border:#e2d6c9; --text:#24211f;
@@ -313,12 +313,118 @@
   }
 }
 
+
+/* === Compact Header === */
+.topbar{
+  padding:8px 14px !important;
+  min-height:auto !important;
+}
+
+.topbar h1{
+  margin:0 !important;
+  font-size:18px !important;
+  line-height:1.2 !important;
+}
+
+.topbar p{
+  display:none !important;
+}
+
+
+/* === SICHTBAR kompaktere Karten === */
+.kartenbereich{
+  gap:10px !important;
+  grid-template-columns:repeat(3,minmax(210px,1fr)) !important;
+}
+
+.card{
+  border-radius:14px !important;
+  box-shadow:0 3px 10px rgba(90,70,50,.055) !important;
+}
+
+.card summary{
+  min-height:54px !important;
+  padding:10px 12px !important;
+  font-size:15px !important;
+  line-height:1.15 !important;
+  gap:8px !important;
+}
+
+.card summary span:first-child,
+.card summary .card-title{
+  font-size:15px !important;
+  line-height:1.15 !important;
+}
+
+.toggle-hint,
+.badge{
+  font-size:10px !important;
+  padding:5px 7px !important;
+  border-radius:999px !important;
+  max-width:68px !important;
+}
+
+.content{
+  padding:12px !important;
+}
+
+.field{
+  margin-bottom:9px !important;
+}
+
+.field-title{
+  margin-bottom:5px !important;
+  font-size:14px !important;
+}
+
+select,
+input[type="text"],
+textarea{
+  padding:8px 10px !important;
+  font-size:14px !important;
+  border-radius:9px !important;
+}
+
+.option{
+  padding:8px 10px !important;
+  gap:8px !important;
+  font-size:14px !important;
+}
+
+.option input{
+  width:17px !important;
+  height:17px !important;
+}
+
+.hint{
+  font-size:11px !important;
+  margin-top:3px !important;
+}
+
+.card-close-bottom{
+  margin-top:10px !important;
+  padding:9px 12px !important;
+}
+
+@media (max-width:850px){
+  .kartenbereich{
+    grid-template-columns:1fr !important;
+    gap:9px !important;
+  }
+
+  .card summary{
+    min-height:50px !important;
+    padding:9px 11px !important;
+    font-size:14px !important;
+  }
+}
+
 </style>
 </head>
 <body>
 <main>
   <section class="topbar">
-    <h1>Einsatzformular – Allgemein</h1>
+    <h1>Einsatzformular</h1>
     <p>Arbeitsversion liest die Karten aus <strong>basis_allgemein.json</strong>. Profil: <span id="profilInfo"></span></p>
   </section>
 
